@@ -30,6 +30,7 @@ from decimal import Decimal
 from service.models import Product, Category, db
 from service import app
 from tests.factories import ProductFactory
+from service.models import DataValidationError
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -136,6 +137,17 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "in test")
 
+    def test_update_product_raises_error_with_no_id(self):
+        """It should raise DataValidationError when update is called with no ID"""
+
+        product = ProductFactory()
+        product.create()
+        product.id = None  # Simulate missing ID to trigger the exception
+
+        with self.assertRaises(DataValidationError) as context:
+            product.update()
+
+
     def test_delete_a_product(self):
         """It should Delete a Product"""
         product = ProductFactory()
@@ -191,3 +203,28 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.available, available)
+
+    def test_find_by_price(self):
+        """It should return all products that match the given price"""
+
+        # Arrange: Create products with various prices
+        product1 = ProductFactory(price=Decimal("19.99"))
+        product2 = ProductFactory(price=Decimal("19.99"))
+        product3 = ProductFactory(price=Decimal("29.99"))
+
+        product1.create()
+        product2.create()
+        product3.create()
+
+        # Act: Search by Decimal
+        results = Product.find_by_price(Decimal("19.99")).all()
+
+        # Assert
+        self.assertEqual(len(results), 2)
+        for product in results:
+            self.assertEqual(product.price, Decimal("19.99"))
+
+        # Act: Search by string (should still work)
+        string_results = Product.find_by_price("19.99").all()
+        self.assertEqual(len(string_results), 2)
+
