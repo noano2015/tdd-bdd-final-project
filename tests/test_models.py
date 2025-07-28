@@ -29,8 +29,9 @@ import unittest
 from decimal import Decimal
 from service.models import Product, Category, db
 from service import app
-from tests.factories import ProductFactory
 from service.models import DataValidationError
+from tests.factories import ProductFactory
+
 
 DATABASE_URI = os.getenv(
     "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -144,9 +145,8 @@ class TestProductModel(unittest.TestCase):
         product.create()
         product.id = None  # Simulate missing ID to trigger the exception
 
-        with self.assertRaises(DataValidationError) as context:
+        with self.assertRaises(DataValidationError):
             product.update()
-
 
     def test_delete_a_product(self):
         """It should Delete a Product"""
@@ -227,4 +227,3 @@ class TestProductModel(unittest.TestCase):
         # Act: Search by string (should still work)
         string_results = Product.find_by_price("19.99").all()
         self.assertEqual(len(string_results), 2)
-
